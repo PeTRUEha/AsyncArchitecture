@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "auth_service"
+version = "0.0.0"
+description = ""
+authors = []
+readme = "README.md"
+packages = [{include = "poetry_demo"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+uvicorn = "^0.23.2"
+fastapi = "^0.101.0"
+pyjwt = "^2.8.0"
+python-decouple = "^3.8"
+email-validator = "^2.0.0.post2"
+pydantic = "^2.1.1"
