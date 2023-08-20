@@ -1,0 +1,8 @@
+from enum import StrEnum
+
+
+class Role(StrEnum):
+    ADMINISTRATOR = 'ADMINISTRATOR'
+    DEVELOPER = 'DEVELOPER'
+    MANAGER = 'MANAGER'
+    ACCOUNTANT = 'ACCOUNTANT'
