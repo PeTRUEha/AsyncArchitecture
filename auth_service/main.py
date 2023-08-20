@@ -1,42 +1,83 @@
+import time
 from typing import Annotated
-from fastapi import FastAPI, Body, Depends
+from fastapi import FastAPI, Body, Depends, Request
+import uvicorn
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from app.constants import Role
+from app.db import User, Session
+from app.kafka_setup import producer
 from app.model import UserSchema, UserLoginSchema
 from app.auth.auth_bearer import JWTBearer
-from app.auth.auth_handler import signJWT
+from app.auth.auth_handler import signJWT, decodeJWT
 
-
-users = [
-    UserSchema(
-        fullname='name',
-        email='email@mail.mail',
-        password='password'
-    )
-]
+import uuid
 
 app = FastAPI()
 
 
-def check_user(data: UserLoginSchema):
-    for user in users:
-        if user.email == data.email and user.password == data.password:
-            return True
-    return False
+def get_user_role(user_email: str):
+    return Session().query(User).filter_by(email=user_email).all()[0].role
 
+
+def check_user(data: UserLoginSchema):
+    query = Session().query(User).filter(
+        User.email == data.email, User.password == data.password
+    )
+    if len(query.all()) > 0:
+        return True
+    else:
+        return False
+
+
+async def get_user_email(request: Request):
+    credentials: HTTPAuthorizationCredentials = await HTTPBearer().__call__(request)
+    return decodeJWT(credentials.credentials)['user_id']
 
 # route handlers
 
-@app.post("/confirm_authenticity", tags=["posts"])
+
+@app.post("/user/create_new_user", tags=["user"])
+async def create_user(
+        authenticity: Annotated[bool, Depends(JWTBearer())],
+        request: Request,
+        new_user: UserSchema = Body(...),
+    ):
+    current_user_email = await get_user_email(request)
+    assert Role(get_user_role(current_user_email)) == Role.ADMINISTRATOR
+
+    session = Session()
+    session.add(User(**new_user.model_dump()))
+    user_created_message = {
+        'event_id': uuid.uuid1(),
+        'event_version': 1,
+        'event_name': 'user_created',
+        'event_time': time.time(),
+        'producer': "auth_service",
+        "data": {
+            **new_user.model_dump()  # TODO: не вставлять сюда пароль
+        }
+    }
+    producer.send('users-stream', user_created_message)
+    producer.flush()
+    session.commit()
+    return signJWT(new_user.email)
+
+
+@app.get("/confirm_authenticity")
 def confirm_authenticity(authenticity: Annotated[bool, Depends(JWTBearer())]):
     return {
         "authenticity": authenticity
     }
 
 
-@app.post("/user/signup", tags=["user"])
-def create_user(user: UserSchema = Body(...)):
-    users.append(user)  # TODO: replace with db call, making sure to hash the password first
-    return signJWT(user.email)
+@app.get('/get_current_user_role')
+async def get_current_user_role(request: Request):
+    user_email = await get_user_email(request)
+    role = get_user_role(user_email)
+    return {
+        'role': role
+    }
 
 
 @app.post("/user/login", tags=["user"])
@@ -46,3 +87,7 @@ def user_login(user: UserLoginSchema = Body(...)):
     return {
         "error": "Wrong login details!"
     }
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="127.0.0.1", port=8000)
