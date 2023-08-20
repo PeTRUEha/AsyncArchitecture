@@ -1,5 +1,5 @@
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import create_engine, Column, String, Integer
+from sqlalchemy import create_engine, Column, String, Integer, ForeignKey
 from sqlalchemy.orm import sessionmaker
 import sqlite3
 
@@ -9,14 +9,14 @@ Base = declarative_base()
 class Task(Base):
     __tablename__ = 'tasks'
     id = Column('id', Integer, primary_key=True)
-    assignee = Column('assignee')
-    cost = Column()
+    assignee = Column('assignee', ForeignKey('users.id'))
+    cost = Column('cost', Integer)
 
 
 class User(Base):
     __tablename__ = 'users'
     id = Column('id', Integer, primary_key=True)
-    role = Column(String)
+    role = Column('role', String)
 
 
 engine = create_engine("sqlite:///mydb.sqlite3", echo=True)
