@@ -4,7 +4,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+kafka_2.13-3.5.0/
 # C extensions
 *.so
 .idea/
