@@ -6,6 +6,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.constants import Role
 from app.db import User, Session
+from app.event.event import UserCreated
 from app.kafka_setup import producer
 from app.model import UserSchema, UserLoginSchema
 from app.auth.auth_bearer import JWTBearer
@@ -47,18 +48,13 @@ async def create_user(
     assert Role(get_user_role(current_user_email)) == Role.ADMINISTRATOR
 
     session = Session()
-    session.add(User(**new_user.model_dump()))
-    user_created_message = {
-        'event_id': uuid.uuid1(),
-        'event_version': 1,
-        'event_name': 'user_created',
-        'event_time': time.time(),
-        'producer': "auth_service",
-        "data": {
-            **new_user.model_dump()  # TODO: не вставлять сюда пароль
-        }
-    }
-    producer.send('users-stream', user_created_message)
+    new_user_entry = User(**new_user.model_dump())
+    session.add(new_user_entry)
+    event = UserCreated(
+            **new_user_entry.model_dump()
+    )
+    event.validate()
+    producer.send('users-stream', event.dict)
     producer.flush()
     session.commit()
     return signJWT(new_user.email)
