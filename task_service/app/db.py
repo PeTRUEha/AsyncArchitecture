@@ -9,8 +9,9 @@ Base = declarative_base()
 class Task(Base):
     __tablename__ = 'tasks'
     id = Column('id', Integer, primary_key=True)
+    name = Column('name', String)
+    description = Column('description', String)
     assignee = Column('assignee', ForeignKey('users.id'))
-    cost = Column('cost', Integer)
 
 
 class User(Base):
