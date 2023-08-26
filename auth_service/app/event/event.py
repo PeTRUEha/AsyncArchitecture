@@ -9,16 +9,6 @@ from jsonschema import validate
 EVENT_PRODUCER = 'auth_service'
 
 
-required = [
-    "event_id",
-    "event_version",
-    "event_name",
-    "event_time",
-    "producer",
-    "data"
-]
-
-
 class Event(ABC):
     schema_path: str = None  # определяется наследниками
     name: str = None   # определяется наследниками
