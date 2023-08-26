@@ -14,9 +14,9 @@ app = FastAPI()
 
 def confirm_authenticity(request: Request):
     headers = {"Authorization": request.headers.get("Authorization")}
-    responce = httpx.get(url='http://127.0.0.1:8000/confirm_authenticity',
+    response = httpx.get(url='http://127.0.0.1:8000/confirm_authenticity',
                              headers=headers)
-    if responce.status_code == 200:
+    if response.status_code == 200:
         return True
     else:
         raise HTTPException(status_code=403, detail="Invalid token or expired token.")
