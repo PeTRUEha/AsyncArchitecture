@@ -9,16 +9,7 @@ Base = declarative_base()
 class Task(Base):
     __tablename__ = 'tasks'
     id = Column('id', Integer, primary_key=True)
-    name = Column('name', String)
-    description = Column('description', String)
-    assignee = Column('assignee', ForeignKey('users.id'))
-
-
-class User(Base):
-    __tablename__ = 'users'
-    id = Column('id', Integer, primary_key=True)
-    role = Column('role', String)
-
+    cost = Column('name', Integer)
 
 engine = create_engine("sqlite:///mydb.sqlite3", echo=True)
 Base.metadata.create_all(bind=engine)
