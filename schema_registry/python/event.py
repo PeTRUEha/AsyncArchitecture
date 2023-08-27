@@ -6,6 +6,8 @@ from pathlib import Path
 
 from jsonschema import validate
 
+from schema_registry.python.all_events import UserCreated
+
 EVENT_PRODUCER = 'auth_service'
 
 
@@ -37,18 +39,6 @@ class Event(ABC):
         full_schema_path = Path(__file__).parents[1].joinpath(self.schema_path)
         schema = json.load(open(full_schema_path))
         validate(self.dict, schema)
-
-
-class UserCreated(Event):
-    schema_path: str = "schemas/auth/user_created/1.json"
-    name = 'user_created'
-    default_version = 1
-
-
-class TaskCreated(Event):
-    schema_path: str = "schemas/auth/task_created/1.json"
-    name = 'task_created'
-    default_version = 1
 
 
 if __name__ == "__main__":

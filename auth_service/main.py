@@ -1,4 +1,3 @@
-import time
 from typing import Annotated
 from fastapi import FastAPI, Body, Depends, Request
 import uvicorn
@@ -6,13 +5,11 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.constants import Role
 from app.db import User, Session
-from app.event.event import UserCreated
+from schema_registry.python.all_events import UserCreated
 from app.kafka_setup import producer
 from app.model import UserSchema, UserLoginSchema
 from app.auth.auth_bearer import JWTBearer
 from app.auth.auth_handler import signJWT, decodeJWT
-
-import uuid
 
 app = FastAPI()
 
@@ -50,8 +47,8 @@ async def create_user(
     session = Session()
     new_user_entry = User(**new_user.model_dump())
     session.add(new_user_entry)
-    event = UserCreated(
-            **new_user_entry.model_dump()
+    event = UserCreated.from_data(
+            data=new_user_entry.model_dump()
     )
     event.validate()
     producer.send('users-stream', event.dict)
